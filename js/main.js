@@ -4,7 +4,7 @@ const context = canvas.getContext('2d');
 const FPS = 60;
 const log2DataSize = 8;
 const dataSize = 2 ** log2DataSize;
-const skipData = 50;
+const skipData = 35;
 var waveData;
 var duration;
 var time = performance.now();
@@ -62,11 +62,20 @@ function init() {
   });
 };
 
+function lowpass(audioData, number) {
+  let value = 0;
+  for (let i = 0; i < 30; i++) {
+    value += audioData[number + i];
+    value += audioData[number - i];
+  }
+  return value / 60;
+}
+
 function setData(audioData, time, audioLength) {
   let data = [];
   let now = Math.trunc(time * audioData.length / audioLength + 0.5);
   for (let i = 0; i < dataSize; i++) {
-    data.push(windowFunction(i / (dataSize - 1)) * audioData[Math.trunc(now + i * skipData)]);
+    data.push(windowFunction(i / (dataSize - 1)) * lowpass(audioData, Math.trunc(now + i * skipData)));
   }
   return data;
 }
@@ -113,7 +122,7 @@ function getSpectrum(data) {
   let F = FFT(data);
   let spectrum = [];
   for (let i = 0; i < data.length; i++) {
-    spectrum.push((F[0][i] ** 2 + F[1][i] ** 2) * 1);
+    spectrum.push((F[0][i] ** 2 + F[1][i] ** 2) ** 0.5 * 8);
   }
   return spectrum;
 }
@@ -125,8 +134,8 @@ function draw(data) {
   let spectrum = getSpectrum(data);
   for (let i = 0; i < data.length / 2; i++) {
     context.beginPath();
-    context.moveTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (2 / 3)  - canvas.width / 3, canvas.height / 2 + 102);
-    context.lineTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (2 / 3) - canvas.width / 3, canvas.height / 2 + 100 - spectrum[i]);
+    context.moveTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2)  - canvas.width / 4, canvas.height / 2 + 102);
+    context.lineTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 + 100 - spectrum[i]);
     context.stroke();
   }
 }
