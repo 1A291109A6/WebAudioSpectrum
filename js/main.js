@@ -94,12 +94,19 @@ function reverseBit(num, b) {
   return res;
 }
 
+var reverseBitArray = [];
+function getReverseBitArray() {
+  for (let i = 0; i < dataSize; i++) {
+    reverseBitArray.push(reverseBit(i, Math.trunc(Math.log(dataSize) / Math.log(2) + 0.5)));
+  }
+}
+
 
 function FFT(data) {
   let Fi = Array(data.length).fill(0);
   let Fr = [];
   for (let i = 0; i < data.length; i++) {
-    Fr.push(data[reverseBit(i, Math.trunc(Math.log(data.length) / Math.log(2) + 0.5))]);
+    Fr.push(data[reverseBitArray[i]]);
   }
   let windowSize = 1;
   while (windowSize < data.length) {
@@ -159,6 +166,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
   play.addEventListener('click', () => {
     if (waveData.length > 0) {
+      reverseBitArray = [];
+      getReverseBitArray();
       audioPlayer.play();
       time = performance.now()
       startInterval();
