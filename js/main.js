@@ -194,9 +194,8 @@ let intervalId;
 
 function startInterval() {
   intervalId = setInterval(() => {
-    let now = (performance.now() - time) / 1000
-    draw(setData(waveData, now, duration));
-    draw2(waveData, now, duration);
+    draw(setData(waveData, audioPlayer.currentTime, duration));
+    draw2(waveData, audioPlayer.currentTime, duration);
   }, 1000 / FPS);
 }
 
