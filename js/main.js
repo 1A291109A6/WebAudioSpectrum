@@ -4,7 +4,7 @@ const context = canvas.getContext('2d');
 const FPS = 60;
 const log2DataSize = 8;
 const dataSize = 2 ** log2DataSize;
-const skipData = 35;
+const skipData = 40;
 var waveData;
 var duration;
 var time = performance.now();
@@ -64,11 +64,11 @@ function init() {
 
 function lowpass(audioData, number) {
   let value = 0;
-  for (let i = 0; i < 30; i++) {
-    value += audioData[number + i];
-    value += audioData[number - i];
+  for (let i = 0; i < 15; i++) {
+    value += audioData[number + 2 * i];
+    value += audioData[number - 2 * i];
   }
-  return value / 60;
+  return value / 30;
 }
 
 function setData(audioData, time, audioLength) {
@@ -101,6 +101,33 @@ function getReverseBitArray() {
   }
 }
 
+var wiRList = [];
+var wiIList = [];
+var wkRList = [];
+var wkIList = [];
+function makeWList() {
+  let windowSize = 1;
+  while (windowSize < dataSize) {
+    windowSize *= 2;
+    let _wiRList = [];
+    let _wiIList = [];
+    let _wkRList = [];
+    let _wkIList = [];
+    for (let i = 0; i < dataSize; i++) {
+      if (i % windowSize < windowSize / 2) {
+        let k = i + windowSize / 2;
+        _wiRList.push(Math.cos(-2 * Math.PI * (i % windowSize) / windowSize));
+        _wiIList.push(Math.sin(-2 * Math.PI * (i % windowSize) / windowSize));
+        _wkRList.push(Math.cos(-2 * Math.PI * (k % windowSize) / windowSize));
+        _wkIList.push(Math.sin(-2 * Math.PI * (k % windowSize) / windowSize));
+      }
+    }
+    wiRList.push(_wiRList);
+    wiIList.push(_wiIList);
+    wkRList.push(_wkRList);
+    wkIList.push(_wkIList);
+  }
+}
 
 function FFT(data) {
   let Fi = Array(data.length).fill(0);
@@ -109,18 +136,22 @@ function FFT(data) {
     Fr.push(data[reverseBitArray[i]]);
   }
   let windowSize = 1;
+  let j = 0;
   while (windowSize < data.length) {
     windowSize *= 2;
+    let l = 0;
     for (let i = 0; i < data.length; i++) {
       if (i % windowSize < windowSize / 2) {
         let k = i + windowSize / 2;
-        let wiR = Math.cos(-2 * Math.PI * (i % windowSize) / windowSize);
-        let wiI = Math.sin(-2 * Math.PI * (i % windowSize) / windowSize);
-        let wkR = Math.cos(-2 * Math.PI * (k % windowSize) / windowSize);
-        let wkI = Math.sin(-2 * Math.PI * (k % windowSize) / windowSize);
+        let wiR = wiRList[j][l];
+        let wiI = wiIList[j][l];
+        let wkR = wkRList[j][l];
+        let wkI = wkIList[j][l];
+        l += 1;
         [Fr[i], Fi[i], Fr[k], Fi[k]] = [Fr[i] + wiR * Fr[k] - wiI * Fi[k], Fi[i] + wiI * Fr[k] + wiR * Fi[k], Fr[i] + wkR * Fr[k] - wkI * Fi[k], Fi[i] + wkI * Fr[k] + wkR * Fi[k]];
       }
     }
+    j += 1;
   }
   return [Fr, Fi];
 }
@@ -139,12 +170,24 @@ function draw(data) {
   context.strokeStyle = "Blue";
   context.lineWidth = 2;
   let spectrum = getSpectrum(data);
+  context.beginPath();
   for (let i = 0; i < data.length / 2; i++) {
-    context.beginPath();
     context.moveTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2)  - canvas.width / 4, canvas.height / 2 + 102);
     context.lineTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 + 100 - spectrum[i]);
-    context.stroke();
   }
+  context.stroke();
+}
+
+function draw2(data, time, audioLength) {
+  let now = Math.trunc(time * data.length / audioLength + 0.5);
+  context.strokeStyle = "Black";
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(canvas.width / 2 - canvas.width / 4, canvas.height / 2 - 200 - data[Math.trunc(now)] * 100);
+  for (let i = 0; i < dataSize; i++) {
+    context.lineTo(canvas.width / 2 + (i / (dataSize - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 - 200 - data[Math.trunc(now + i * skipData / 10)] * 100);
+  }
+  context.stroke();
 }
 
 let intervalId;
@@ -153,6 +196,7 @@ function startInterval() {
   intervalId = setInterval(() => {
     let now = (performance.now() - time) / 1000
     draw(setData(waveData, now, duration));
+    draw2(waveData, now, duration);
   }, 1000 / FPS);
 }
 
@@ -168,6 +212,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (waveData.length > 0) {
       reverseBitArray = [];
       getReverseBitArray();
+      makeWList();
       audioPlayer.play();
       time = performance.now()
       startInterval();
