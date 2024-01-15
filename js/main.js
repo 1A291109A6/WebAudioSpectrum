@@ -7,7 +7,6 @@ const dataSize = 2 ** log2DataSize;
 const skipData = 40;
 var waveData;
 var duration;
-var time = performance.now();
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -160,25 +159,35 @@ function getSpectrum(data) {
   let F = FFT(data);
   let spectrum = [];
   for (let i = 0; i < data.length; i++) {
-    spectrum.push((F[0][i] ** 2 + F[1][i] ** 2) ** 0.5 * 8);
+    spectrum.push(Math.sqrt(F[0][i] * F[0][i] + F[1][i] * F[1][i]) * 8);
   }
   return spectrum;
 }
 
-function draw(data) {
+function drawSpctrum(data) {
+  let spectrum = [];
+  let getData;
+  if(data == undefined) {
+    spectrum = preSpectrum;
+  } else {
+    getData = getSpectrum(data);
+    for (let i = 0; i < dataSize / 2; i++) {
+      spectrum.push((getData[i] + preSpectrum[i]) / 2);
+    }
+    preSpectrum = getData;
+  }
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.strokeStyle = "Blue";
   context.lineWidth = 2;
-  let spectrum = getSpectrum(data);
   context.beginPath();
-  for (let i = 0; i < data.length / 2; i++) {
-    context.moveTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2)  - canvas.width / 4, canvas.height / 2 + 102);
-    context.lineTo(canvas.width / 2 + (i / (data.length / 2 - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 + 100 - spectrum[i]);
+  for (let i = 0; i < dataSize / 2; i++) {
+    context.moveTo(canvas.width / 2 + (i / (dataSize / 2 - 1)) * canvas.width * (1 / 2)  - canvas.width / 4, canvas.height / 2 + 102);
+    context.lineTo(canvas.width / 2 + (i / (dataSize / 2 - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 + 100 - spectrum[i]);
   }
   context.stroke();
 }
 
-function draw2(data, time, audioLength) {
+function drawWave(data, time, audioLength) {
   let now = Math.trunc(time * data.length / audioLength + 0.5);
   context.strokeStyle = "Black";
   context.lineWidth = 1;
@@ -192,10 +201,19 @@ function draw2(data, time, audioLength) {
 
 let intervalId;
 
+var num = 0;
+var preSpectrum = Array(dataSize).fill(0);
+
 function startInterval() {
   intervalId = setInterval(() => {
-    draw(setData(waveData, audioPlayer.currentTime, duration));
-    draw2(waveData, audioPlayer.currentTime, duration);
+    if(num < 1) {
+      drawSpctrum(setData(waveData, audioPlayer.currentTime + 1 / FPS, duration));
+      num += 1;
+    } else {
+      drawSpctrum();
+      num = 0;
+    }
+    //drawWave(waveData, audioPlayer.currentTime, duration);
   }, 1000 / FPS);
 }
 
@@ -213,7 +231,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       getReverseBitArray();
       makeWList();
       audioPlayer.play();
-      time = performance.now()
       startInterval();
     } else {
       alert('Please upload an audio file first.');
