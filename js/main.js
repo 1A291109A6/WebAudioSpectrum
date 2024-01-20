@@ -1,5 +1,5 @@
 const canvas = document.getElementById('Canvas');
-const context = canvas.getContext('2d');
+const context = canvas.getContext('2d', { alpha: false });
 
 const FPS = 60;
 const log2DataSize = 8;
@@ -8,8 +8,8 @@ const skipData = 40;
 var waveData;
 var duration;
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = window.innerWidth * 2 / 3;
+canvas.height = window.innerHeight * 2 / 3;
 
 const audioPlayer = document.getElementById('audioPlayer');
 
@@ -177,12 +177,12 @@ function drawSpctrum(data) {
     preSpectrum = getData;
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = "Blue";
+  context.strokeStyle = "rgb(200, 200, 200)";
   context.lineWidth = 2;
   context.beginPath();
   for (let i = 0; i < dataSize / 2; i++) {
-    context.moveTo(canvas.width / 2 + (i / (dataSize / 2 - 1)) * canvas.width * (1 / 2)  - canvas.width / 4, canvas.height / 2 + 102);
-    context.lineTo(canvas.width / 2 + (i / (dataSize / 2 - 1)) * canvas.width * (1 / 2) - canvas.width / 4, canvas.height / 2 + 100 - spectrum[i]);
+    context.moveTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 102));
+    context.lineTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 100 - spectrum[i]));
   }
   context.stroke();
 }
@@ -204,17 +204,20 @@ let intervalId;
 var num = 0;
 var preSpectrum = Array(dataSize).fill(0);
 
+function animate() {
+  if(num < 1) {
+    drawSpctrum(setData(waveData, audioPlayer.currentTime + 1 / FPS, duration));
+    num += 1;
+  } else {
+    drawSpctrum();
+    num = 0;
+  }
+  requestAnimationFrame(animate);
+}
+
 function startInterval() {
-  intervalId = setInterval(() => {
-    if(num < 1) {
-      drawSpctrum(setData(waveData, audioPlayer.currentTime + 1 / FPS, duration));
-      num += 1;
-    } else {
-      drawSpctrum();
-      num = 0;
-    }
+  animate()
     //drawWave(waveData, audioPlayer.currentTime, duration);
-  }, 1000 / FPS);
 }
 
 function stopInterval() {
