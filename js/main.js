@@ -74,13 +74,18 @@ function setData(audioData, time, audioLength) {
   let data = [];
   let now = Math.trunc(time * audioData.length / audioLength + 0.5);
   for (let i = 0; i < dataSize; i++) {
-    data.push(windowFunction(i / (dataSize - 1)) * lowpass(audioData, Math.trunc(now + i * skipData)));
+    data.push(windowFunction_List[i] * lowpass(audioData, Math.trunc(now + i * skipData)));
   }
   return data;
 }
 
 function windowFunction(x) {
   return 0.42 - 0.5 * Math.cos(2 * Math.PI * x) + 0.08 * Math.cos(4 * Math.PI * x);
+}
+
+var windowFunction_List = [];
+for (let i = 0; i < dataSize; i++) {
+  windowFunction_List.push(windowFunction(i / (dataSize - 1)));
 }
 
 function reverseBit(num, b) {
@@ -177,14 +182,17 @@ function drawSpctrum(data) {
     preSpectrum = getData;
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
+  context.beginPath();
+  context.fillStyle = 'rgb(0, 0, 0)';
+  context.fillRect(0, 0, canvas.width, canvas.height);
   context.strokeStyle = "rgb(200, 200, 200)";
   context.lineWidth = 2;
-  context.beginPath();
   for (let i = 0; i < dataSize / 2; i++) {
     context.moveTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 102));
     context.lineTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 100 - spectrum[i]));
   }
   context.stroke();
+  
 }
 
 function drawWave(data, time, audioLength) {
