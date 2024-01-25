@@ -188,8 +188,8 @@ function drawSpctrum(data) {
   context.strokeStyle = "rgb(200, 200, 200)";
   context.lineWidth = 2;
   for (let i = 0; i < dataSize / 2; i++) {
-    context.moveTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 102));
-    context.lineTo(Math.trunc(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)), Math.trunc(canvas.height / 2 + 100 - spectrum[i]));
+    context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), Math.trunc(canvas.height / 2 + 102));
+    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), Math.trunc(canvas.height / 2 + 100 - spectrum[i]));
   }
   context.stroke();
   
