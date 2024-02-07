@@ -1,23 +1,39 @@
 const canvas = document.getElementById('Canvas');
 const context = canvas.getContext('2d', { alpha: false });
 
+function resizeCanvas() {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const aspectRatio = 16 / 9;
+
+    let canvasWidth, canvasHeight;
+
+    if (screenWidth / screenHeight > aspectRatio) {
+        canvasWidth = screenHeight * aspectRatio;
+        canvasHeight = screenHeight;
+    } else {
+        canvasWidth = screenWidth;
+        canvasHeight = screenWidth / aspectRatio;
+    }
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    sizeRatio = canvas.width / 1280;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+
 const FPS = 60;
 const log2DataSize = 8;
 const dataSize = 2 ** log2DataSize;
 const skipData = 40;
 var waveData;
 var duration;
-
-canvas.width = window.innerWidth * 2 / 3;
-canvas.height = window.innerHeight * 2 / 3;
+var sizeRatio = canvas.width / 1280;
 
 const audioPlayer = document.getElementById('audioPlayer');
-
-function disableScroll() {
-  document.body.style.overflow = 'hidden';
-};
-
-disableScroll();
 
 function init() {
   const input = document.getElementById('fileInput');
@@ -26,7 +42,7 @@ function init() {
     const reader = new FileReader();
 
     reader.onload = (event) => {
-      audioPlayer.src = URL.createObjectURL(file);;
+      audioPlayer.src = URL.createObjectURL(file);
       const audioContext = new AudioContext();
 
       let decodeFunction;
@@ -50,16 +66,40 @@ function init() {
         const channelData = buffer.getChannelData(0);
         duration = buffer.duration;
         let audioData = [];
-        for (let i = 0; i < channelData.length; i ++) {
+        for (let i = 0; i < channelData.length; i++) {
           audioData.push(channelData[i]);
         }
         waveData = audioData;
+
+        const loadingBar = document.createElement('div');
+        loadingBar.textContent = 'Music has been loaded!!';
+        loadingBar.style.width = '90%';
+        loadingBar.style.height = '50px';
+        loadingBar.style.backgroundColor = '#229922';
+        loadingBar.style.color = 'white';
+        loadingBar.style.textAlign = 'center';
+        loadingBar.style.lineHeight = '50px';
+        loadingBar.style.position = 'fixed';
+        loadingBar.style.top = '10px';
+        loadingBar.style.left = '50%';
+        loadingBar.style.transform = 'translateX(-50%)';
+        loadingBar.style.borderRadius = '10px';
+        document.body.insertBefore(loadingBar, document.body.firstChild);
+
+        setTimeout(() => {
+          loadingBar.style.transition = 'opacity 1.5s ease';
+          loadingBar.style.opacity = '0';
+          setTimeout(() => {
+            document.body.removeChild(loadingBar);
+          }, 1500);
+        }, 3000);
       });
       
     }
     reader.readAsArrayBuffer(file);
   });
 };
+
 
 function lowpass(audioData, number) {
   let value = 0;
@@ -186,10 +226,10 @@ function drawSpctrum(data) {
   context.fillStyle = 'rgb(0, 0, 0)';
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.strokeStyle = "rgb(200, 200, 200)";
-  context.lineWidth = 2;
+  context.lineWidth = 2 * sizeRatio;
   for (let i = 0; i < dataSize / 2; i++) {
-    context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), Math.trunc(canvas.height / 2 + 102));
-    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), Math.trunc(canvas.height / 2 + 100 - spectrum[i]));
+    context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
+    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i]) * sizeRatio);
   }
   context.stroke();
   
