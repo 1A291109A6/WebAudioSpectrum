@@ -34,6 +34,7 @@ var duration;
 var sizeRatio = canvas.width / 1280;
 
 const audioPlayer = document.getElementById('audioPlayer');
+audioPlayer.style.display = 'none';
 
 function init() {
   const input = document.getElementById('fileInput');
@@ -225,8 +226,8 @@ function drawSpctrum(data) {
   context.beginPath();
   context.fillStyle = 'rgb(0, 0, 0)';
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = "rgb(200, 200, 200)";
-  context.lineWidth = 2 * sizeRatio;
+  context.strokeStyle = `rgb(${R.value},${G.value},${B.value})`;
+  context.lineWidth = thickness.value * sizeRatio;
   for (let i = 0; i < dataSize / 2; i++) {
     context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
     context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i]) * sizeRatio);
@@ -264,13 +265,18 @@ function animate() {
 }
 
 function startInterval() {
-  animate()
-    //drawWave(waveData, audioPlayer.currentTime, duration);
+  animate();
+  //drawWave(waveData, audioPlayer.currentTime, duration);
 }
 
 function stopInterval() {
   clearInterval(intervalId);
 }
+
+var thickness = document.getElementById("thickness");
+var R = document.getElementById("Red");
+var G = document.getElementById("Green");
+var B = document.getElementById("Blue");
 
 document.addEventListener('DOMContentLoaded', (event) => {
   const play = document.getElementById('play');
