@@ -1,6 +1,8 @@
 const canvas = document.getElementById('Canvas');
 const context = canvas.getContext('2d', { alpha: false });
 
+var playBar = document.getElementById('playBar');
+
 function resizeCanvas() {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -19,6 +21,8 @@ function resizeCanvas() {
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     sizeRatio = canvas.width / 1280;
+    playBar.style.width = canvas.width + 'px';
+
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -230,10 +234,9 @@ function drawSpctrum(data) {
   context.lineWidth = thickness.value * sizeRatio;
   for (let i = 0; i < dataSize / 2; i++) {
     context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i]) * sizeRatio);
+    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
   }
   context.stroke();
-  
 }
 
 function drawWave(data, time, audioLength) {
@@ -248,6 +251,13 @@ function drawWave(data, time, audioLength) {
   context.stroke();
 }
 
+function updatePlayBar(time, duration) {
+  const playBar = document.getElementById('playBar');
+  const progress = (time / duration) * 100;
+  playBar.style.background = `linear-gradient(to right, ${"#FF0000"} ${progress * (1 - 20/canvas.width)+1000/canvas.width}%, ${"#CCCCCC"} ${progress * (1 - 20/canvas.width)+1000/canvas.width}%)`;
+  playBar.value = progress;
+}
+
 let intervalId;
 
 var num = 0;
@@ -256,13 +266,30 @@ var preSpectrum = Array(dataSize).fill(0);
 function animate() {
   if(num < 1) {
     drawSpctrum(setData(waveData, audioPlayer.currentTime + 1 / FPS, duration));
+    updatePlayBar(audioPlayer.currentTime, duration);
     num += 1;
   } else {
     drawSpctrum();
+    updatePlayBar(audioPlayer.currentTime, duration);
     num = 0;
   }
   requestAnimationFrame(animate);
 }
+
+document.getElementById('playBar').addEventListener('input', function() {
+  const currentTime = this.value * duration / 100;
+  audioPlayer.currentTime = currentTime;
+});
+
+document.getElementById('playBar').addEventListener('change', function() {
+  const currentTime = this.value * duration / 100;
+  audioPlayer.currentTime = currentTime;
+});
+
+document.getElementById('playBar').addEventListener('mouseup', function() {
+  const currentTime = this.value * duration / 100;
+  audioPlayer.currentTime = currentTime;
+});
 
 function startInterval() {
   animate();
@@ -274,6 +301,7 @@ function stopInterval() {
 }
 
 var thickness = document.getElementById("thickness");
+var gain = document.getElementById("gain");
 var R = document.getElementById("Red");
 var G = document.getElementById("Green");
 var B = document.getElementById("Blue");
