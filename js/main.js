@@ -105,14 +105,20 @@ function init() {
   });
 };
 
+const squareSigma = 50;
+FIR_list = [];
+for (let i = -14; i < 15; i++) {
+  FIR_list.push(Math.exp(-i * i / (2 * squareSigma)) / Math.sqrt(2 * Math.PI * squareSigma));
+}
 
 function lowpass(audioData, number) {
   let value = 0;
   for (let i = 0; i < 15; i++) {
-    value += audioData[number + 2 * i];
-    value += audioData[number - 2 * i];
+    value += FIR_list[14 + i] * audioData[number + 2 * i];
+    value += FIR_list[14 - i] * audioData[number - 2 * i];
   }
-  return value / 30;
+  value -= FIR_list[14] * audioData[number];
+  return value;
 }
 
 function setData(audioData, time, audioLength) {
@@ -232,16 +238,27 @@ function drawSpctrum(data) {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.strokeStyle = `rgb(${R.value},${G.value},${B.value})`;
   context.lineWidth = thickness.value * sizeRatio;
-  for (let i = 0; i < dataSize / 2; i++) {
-    context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-    context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
+  if (move) {
+    let keepValue = 0;
+    for (let i = 0; i < dataSize / 2; i++) {
+      context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
+      context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
+      keepValue += spectrum[i];
+    }
+    moveValue = moveThreshold.value * moveValue + (1 - moveThreshold.value) * keepValue * moveGain.value * 1e-4;
+    console.log(moveValue);
+  } else {
+    for (let i = 0; i < dataSize / 2; i++) {
+      context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
+      context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
+    }
   }
   context.stroke();
 }
 
 function drawWave(data, time, audioLength) {
   let now = Math.trunc(time * data.length / audioLength + 0.5);
-  context.strokeStyle = "Black";
+  context.strokeStyle = "White";
   context.lineWidth = 1;
   context.beginPath();
   context.moveTo(canvas.width / 2 - canvas.width / 4, canvas.height / 2 - 200 - data[Math.trunc(now)] * 100);
@@ -305,6 +322,14 @@ var gain = document.getElementById("gain");
 var R = document.getElementById("Red");
 var G = document.getElementById("Green");
 var B = document.getElementById("Blue");
+var moveGain = document.getElementById("moveGain");
+var moveThreshold = document.getElementById("moveThreshold");
+var move;
+var moveValue = 0;
+
+document.getElementById("move").addEventListener('change', function() {
+  move = this.checked;
+});
 
 document.addEventListener('DOMContentLoaded', (event) => {
   const play = document.getElementById('play');
