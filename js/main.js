@@ -246,7 +246,6 @@ function drawSpctrum(data) {
       keepValue += spectrum[i];
     }
     moveValue = moveThreshold.value * moveValue + (1 - moveThreshold.value) * keepValue * moveGain.value * 1e-4;
-    console.log(moveValue);
   } else {
     for (let i = 0; i < dataSize / 2; i++) {
       context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
