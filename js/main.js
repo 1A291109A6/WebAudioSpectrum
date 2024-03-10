@@ -4,25 +4,12 @@ const context = canvas.getContext('2d', { alpha: false });
 var playBar = document.getElementById('playBar');
 
 function resizeCanvas() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+    let screenWidth = window.innerWidth - 40;
     const aspectRatio = 16 / 9;
-
-    let canvasWidth, canvasHeight;
-
-    if (screenWidth / screenHeight > aspectRatio) {
-        canvasWidth = screenHeight * aspectRatio;
-        canvasHeight = screenHeight;
-    } else {
-        canvasWidth = screenWidth;
-        canvasHeight = screenWidth / aspectRatio;
-    }
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    canvas.width = screenWidth;
+    canvas.height = screenWidth / aspectRatio;
     sizeRatio = canvas.width / 1280;
     playBar.style.width = canvas.width + 'px';
-
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -77,7 +64,7 @@ function init() {
         waveData = audioData;
 
         const loadingBar = document.createElement('div');
-        loadingBar.textContent = 'Music has been loaded!!';
+        loadingBar.textContent = 'Music loaded!!';
         loadingBar.style.width = '90%';
         loadingBar.style.height = '50px';
         loadingBar.style.backgroundColor = '#229922';
@@ -341,6 +328,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       makeWList();
       audioPlayer.play();
       startInterval();
+      moveValue = 0;
     } else {
       alert('Please upload an audio file first.');
     }
