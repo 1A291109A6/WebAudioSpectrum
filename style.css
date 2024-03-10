@@ -132,3 +132,7 @@ input:checked + .slider:before {
   left: calc(100% + 10px);
   transform: translateY(-50%);
 }
+
+.center {
+  text-align: center;
+}
