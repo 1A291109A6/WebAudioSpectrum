@@ -1,1 +1,1 @@
-# JS-AudioSpectrum
+# WebAudioSpectrum
