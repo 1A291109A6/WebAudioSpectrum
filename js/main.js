@@ -12,7 +12,7 @@ function resizeCanvas() {
     playBar.style.width = canvas.width + 'px';
 }
 
-window.addEventListener('resize', resizeCanvas);
+//window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 
@@ -229,14 +229,14 @@ function drawSpctrum(data) {
     let keepValue = 0;
     for (let i = 0; i < dataSize / 2; i++) {
       context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
-      context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
+      context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
       keepValue += spectrum[i];
     }
     moveValue = moveThreshold.value * moveValue + (1 - moveThreshold.value) * keepValue * moveGain.value * 1e-4;
   } else {
     for (let i = 0; i < dataSize / 2; i++) {
       context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-      context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value) * sizeRatio);
+      context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
     }
   }
   context.stroke();
@@ -312,9 +312,22 @@ var moveGain = document.getElementById("moveGain");
 var moveThreshold = document.getElementById("moveThreshold");
 var move;
 var moveValue = 0;
+var bassReduction = Array(dataSize / 2).fill(1);
 
 document.getElementById("move").addEventListener('change', function() {
   move = this.checked;
+});
+
+document.getElementById("bassReduction").addEventListener('change', function() {
+  if (this.checked) {
+    for(let i = 0; i < dataSize / 2; i++) {
+      bassReduction[i] = 0.75 * i / dataSize + 0.625;
+    }
+  } else {
+    for(let i = 0; i < dataSize / 2; i++) {
+      bassReduction[i] = 1;
+    }
+  }
 });
 
 document.addEventListener('DOMContentLoaded', (event) => {
