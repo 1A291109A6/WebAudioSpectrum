@@ -20,4 +20,4 @@ https://1a291109a6.github.io/WebAudioSpectrum/
   - 低音の感度を下げる(これをONにしないと低音部分が大きく表示される)
 
 **Bar color**
-  - Red、Green、Blueでバーの色の赤色、緑色、青色成分の強さを変更
+  - **Red、Green、Blue**でバーの色の赤色、緑色、青色成分の強さを変更
