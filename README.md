@@ -11,7 +11,7 @@ https://1a291109a6.github.io/WebAudioSpectrum/
 5. **画面下の赤色のバー**で任意の場所から再生
 
 ## 設定
-**Bar Settings**
+**Bar settings**
   - **Bar thickness**でバーの太さを変更
   - **Gain**でバーの感度を変更
   - **Moveボタン**で音楽に合わせてバーを拡大、縮小する
