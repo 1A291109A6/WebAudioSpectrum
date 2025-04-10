@@ -12,7 +12,6 @@ function resizeCanvas() {
     playBar.style.width = canvas.width + 'px';
 }
 
-//window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 
@@ -296,7 +295,6 @@ document.getElementById('playBar').addEventListener('mouseup', function() {
 
 function startInterval() {
   animate();
-  //drawWave(waveData, audioPlayer.currentTime, duration);
 }
 
 function stopInterval() {
