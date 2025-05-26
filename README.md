@@ -1,7 +1,7 @@
 # WebAudioSpectrum
 端末上の音声ファイルを**オーディオスペクトラム**で同期させて再生できます。いくつかの**高速化**を行っているため軽量で動作します。**Web Audio APIでFFT**をせず、FFTの処理は自作しています。
 
-https://1a291109a6.github.io/WebAudioSpectrum/
+https://web-audio-spectrum.netlify.app/
 
 ## 使い方
 1. **ファイルを選択**を押して、MP3ファイルを選択(現在MP3のみ)
