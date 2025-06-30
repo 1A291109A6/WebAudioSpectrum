@@ -449,12 +449,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
   });
 
   playButton.addEventListener('click', () => {
-    reverseBitArray = [];
-    getReverseBitArray();
-    makeWList();
-    audioPlayer.play();
-    startAnimation();
-    moveValue = 0;
+      // FFT関連の配列をすべてリセットする
+      reverseBitArray = [];
+      wiRList = [];
+      wiIList = [];
+      wkRList = [];
+      wkIList = [];
+
+      // その後で再生成する
+      getReverseBitArray();
+      makeWList();
+  
+      audioPlayer.play();
+      startAnimation();
+      moveValue = 0;
   });
 
   stopButton.addEventListener('click', () => {
