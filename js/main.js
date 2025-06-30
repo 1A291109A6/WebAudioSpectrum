@@ -9,7 +9,7 @@ function resizeCanvas() {
     canvas.width = screenWidth;
     canvas.height = screenWidth / aspectRatio;
     sizeRatio = canvas.width / 1280;
-    playBar.style.width = canvas.width + 'px';
+    
 }
 
 resizeCanvas();
@@ -22,9 +22,21 @@ const skipData = 40;
 var waveData;
 var duration;
 var sizeRatio = canvas.width / 1280;
+var backgroundImage = null;
 
 const audioPlayer = document.getElementById('audioPlayer');
 audioPlayer.style.display = 'none';
+
+const playButton = document.getElementById('play');
+const stopButton = document.getElementById('stop');
+
+function updateButtonStates() {
+  const isFileLoaded = waveData && waveData.length > 0;
+  const isPlaying = !audioPlayer.paused;
+
+  playButton.disabled = !isFileLoaded || isPlaying;
+  stopButton.disabled = !isFileLoaded || !isPlaying;
+}
 
 function init() {
   const input = document.getElementById('fileInput');
@@ -36,24 +48,7 @@ function init() {
       audioPlayer.src = URL.createObjectURL(file);
       const audioContext = new AudioContext();
 
-      let decodeFunction;
-      switch (file.type) {
-        case 'audio/wav':
-          decodeFunction = audioContext.decodeAudioData;
-          break;
-        case 'audio/mp3':
-        case 'audio/mpeg':
-        case 'audio/m4a':
-          decodeFunction = audioContext.decodeAudioData.bind(audioContext, event.target.result);
-          break;
-        case 'audio/ogg':
-          decodeFunction = audioContext.decodeAudioData.bind(audioContext, event.target.result);
-          break;
-        default:
-          throw new Error(`Unsupported file type: ${file.type}`);
-      }
-
-      decodeFunction((buffer) => {
+      audioContext.decodeAudioData(event.target.result, (buffer) => {
         const channelData = buffer.getChannelData(0);
         duration = buffer.duration;
         let audioData = [];
@@ -61,6 +56,9 @@ function init() {
           audioData.push(channelData[i]);
         }
         waveData = audioData;
+        getReverseBitArray();
+        makeWList();
+        updateButtonStates();
 
         const loadingBar = document.createElement('div');
         loadingBar.textContent = 'Music loaded!!';
@@ -75,6 +73,7 @@ function init() {
         loadingBar.style.left = '50%';
         loadingBar.style.transform = 'translateX(-50%)';
         loadingBar.style.borderRadius = '10px';
+        loadingBar.style.zIndex = '1000';
         document.body.insertBefore(loadingBar, document.body.firstChild);
 
         setTimeout(() => {
@@ -84,6 +83,10 @@ function init() {
             document.body.removeChild(loadingBar);
           }, 1500);
         }, 3000);
+      }, (error) => {
+          console.error('Error decoding audio data:', error);
+          alert('Error decoding audio file. Please try a different file.');
+          updateButtonStates();
       });
       
     }
@@ -219,26 +222,112 @@ function drawSpctrum(data) {
     preSpectrum = getData;
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.beginPath();
-  context.fillStyle = 'rgb(0, 0, 0)';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = `rgb(${R.value},${G.value},${B.value})`;
-  context.lineWidth = thickness.value * sizeRatio;
-  if (move) {
-    let keepValue = 0;
-    for (let i = 0; i < dataSize / 2; i++) {
-      context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
-      context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
-      keepValue += spectrum[i];
-    }
-    moveValue = moveThreshold.value * moveValue + (1 - moveThreshold.value) * keepValue * moveGain.value * 1e-4;
+  if (backgroundImage) {
+    context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
   } else {
-    for (let i = 0; i < dataSize / 2; i++) {
-      context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-      context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
+    context.fillStyle = 'rgb(0, 0, 0)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  context.save(); // 現在のキャンバスの状態を保存
+
+  const currentScale = parseFloat(scale.value);
+  const currentXOffset = parseFloat(xOffset.value);
+  const currentYOffset = parseFloat(yOffset.value);
+
+  let baseCenterX, baseCenterY;
+  const shape = spectrumShape.value;
+
+  if (shape === 'circle') {
+    baseCenterX = canvas.width / 2;
+    baseCenterY = canvas.height / 2;
+  } else { // normal or symmetry
+    baseCenterX = canvas.width / 2;
+    baseCenterY = canvas.height * 2 / 3;
+  }
+
+  // 描画の中心を移動し、スケールを適用
+  context.translate(baseCenterX + currentXOffset, baseCenterY + currentYOffset);
+  context.scale(currentScale, currentScale);
+  context.translate(-(baseCenterX + currentXOffset), -(baseCenterY + currentYOffset));
+
+  context.beginPath();
+  context.strokeStyle = `rgb(${R.value},${G.value},${B.value})`;
+  context.lineWidth = thickness.value * sizeRatio / currentScale; // スケールに合わせて線の太さも調整
+
+  if (shape === 'circle') {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(canvas.width, canvas.height) / 4;
+    if (move) {
+      let keepValue = 0;
+      for (let i = 0; i < dataSize / 2; i++) {
+        const angle = (i / (dataSize / 2)) * 2 * Math.PI;
+        const scaledRadius = radius * (1 + moveValue);
+        const x1 = centerX + scaledRadius * Math.cos(angle);
+        const y1 = centerY + scaledRadius * Math.sin(angle);
+        const x2 = centerX + (scaledRadius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.cos(angle);
+        const y2 = centerY + (scaledRadius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.sin(angle);
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        keepValue += spectrum[i];
+      }
+      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
+    } else {
+      for (let i = 0; i < dataSize / 2; i++) {
+        const angle = (i / (dataSize / 2)) * 2 * Math.PI;
+        const x1 = centerX + radius * Math.cos(angle);
+        const y1 = centerY + radius * Math.sin(angle);
+        const x2 = centerX + (radius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.cos(angle);
+        const y2 = centerY + (radius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.sin(angle);
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+      }
+    }
+  } else if (shape === 'symmetry') {
+    if (move) {
+      let keepValue = 0;
+      for (let i = 0; i < dataSize / 2; i++) {
+        const x = canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue);
+        const y = canvas.height * 2 / 3;
+        const height = (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio;
+        context.moveTo(x, y);
+        context.lineTo(x, y - height);
+        context.moveTo(x, y);
+        context.lineTo(x, y + height);
+        keepValue += spectrum[i];
+      }
+      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
+    } else {
+      for (let i = 0; i < dataSize / 2; i++) {
+        const x = canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3);
+        const y = canvas.height * 2 / 3;
+        const height = (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio;
+        context.moveTo(x, y);
+        context.lineTo(x, y - height);
+        context.moveTo(x, y);
+        context.lineTo(x, y + height);
+      }
+    }
+  } else { // normal
+    if (move) {
+      let keepValue = 0;
+      for (let i = 0; i < dataSize / 2; i++) {
+        context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
+        context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
+        keepValue += spectrum[i];
+      }
+      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
+    } else {
+      for (let i = 0; i < dataSize / 2; i++) {
+        context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
+        context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
+      }
     }
   }
   context.stroke();
+
+  context.restore(); // キャンバスの状態を復元
 }
 
 function drawWave(data, time, audioLength) {
@@ -260,12 +349,13 @@ function updatePlayBar(time, duration) {
   playBar.value = progress;
 }
 
-let intervalId;
-
+var animationRunning = false;
 var num = 0;
 var preSpectrum = Array(dataSize).fill(0);
 
 function animate() {
+  if (!animationRunning) return; // アニメーションが停止している場合は終了
+
   if(num < 1) {
     drawSpctrum(setData(waveData, audioPlayer.currentTime + 1 / FPS, duration));
     updatePlayBar(audioPlayer.currentTime, duration);
@@ -293,12 +383,13 @@ document.getElementById('playBar').addEventListener('mouseup', function() {
   audioPlayer.currentTime = currentTime;
 });
 
-function startInterval() {
+function startAnimation() {
+  animationRunning = true;
   animate();
 }
 
-function stopInterval() {
-  clearInterval(intervalId);
+function stopAnimation() {
+  animationRunning = false;
 }
 
 var thickness = document.getElementById("thickness");
@@ -306,9 +397,13 @@ var gain = document.getElementById("gain");
 var R = document.getElementById("Red");
 var G = document.getElementById("Green");
 var B = document.getElementById("Blue");
+var spectrumShape = document.getElementById("spectrumShape");
+var xOffset = document.getElementById("xOffset");
+var yOffset = document.getElementById("yOffset");
+var scale = document.getElementById("scale");
 var moveGain = document.getElementById("moveGain");
 var moveThreshold = document.getElementById("moveThreshold");
-var move;
+var move = false;
 var moveValue = 0;
 var bassReduction = Array(dataSize / 2).fill(1);
 
@@ -328,26 +423,46 @@ document.getElementById("bassReduction").addEventListener('change', function() {
   }
 });
 
-document.addEventListener('DOMContentLoaded', (event) => {
-  const play = document.getElementById('play');
-  const stop = document.getElementById('stop');
+document.getElementById("spectrumShape").addEventListener('change', function() {
+  drawSpctrum();
+});
 
-  play.addEventListener('click', () => {
-    if (waveData.length > 0) {
-      reverseBitArray = [];
-      getReverseBitArray();
-      makeWList();
-      audioPlayer.play();
-      startInterval();
-      moveValue = 0;
-    } else {
-      alert('Please upload an audio file first.');
+document.addEventListener('DOMContentLoaded', (event) => {
+  init();
+  updateButtonStates();
+
+  const bgImageInput = document.getElementById('bgImageInput');
+  bgImageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          backgroundImage = img;
+          drawSpctrum(); // 画像が読み込まれたら再描画
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   });
 
-  stop.addEventListener('click', () => {
+  playButton.addEventListener('click', () => {
+    reverseBitArray = [];
+    getReverseBitArray();
+    makeWList();
+    audioPlayer.play();
+    startAnimation();
+    moveValue = 0;
+  });
+
+  stopButton.addEventListener('click', () => {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
-    stopInterval();
+    stopAnimation();
   });
+
+  audioPlayer.addEventListener('play', updateButtonStates);
+  audioPlayer.addEventListener('pause', updateButtonStates);
 });
