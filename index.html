@@ -17,59 +17,113 @@
       gtag('config', 'G-9EF6SNN772');
     </script>
   </head>
-  <body onload="init()">
+  <body>
     <h1>Web Audio Spectrum</h1>
-    <input type="file" id="fileInput" accept=".mp3">
-    <!--<select name="">
-      <option value="">bar</option>
-      <option value="">line</option>
-    </select>-->
-    <br/>
-    <h3>Bar settings</h3>
-    <div>
-      <input type="range" id="thickness" name="thickness" min="0.1" max="10" value="3" step="0.1">
-      <label for="thickness">Bar thickness</label>
-    </div>
-    <div>
-      <input type="range" id="gain" name="gain" min="0.1" max="5" value="1.5" step="0.1">
-      <label for="gain">Gain</label>
-    </div>
-    <br/>
-    <label class="switch">
-      <input type="checkbox" id="move" name="move">
-      <span class="slider"></span>
-      <label for="move" class="label-text">Move</label>
-    </label>
-    <div></div>
-    <div>
-      <input type="range" id="moveGain" name="moveGain" min="0.1" max="5" value="1" step="0.1">
-      <label for="moveGain">Gain</label>
-    </div>
-    <div>
-      <input type="range" id="moveThreshold" name="moveThreshold" min="0" max="1" value="0.9" step="0.01">
-      <label for="moveThreshold">Threshold</label>
-    </div>
-    <h3>Bass reduction</h3>
-    <label class="switch">
-      <input type="checkbox" id="bassReduction" name="bassReduction">
-      <span class="slider"></span>
-    </label>
-    <h3>Bar color</h3>
-    <div>
-      <input type="range" id="Red" name="Red" min="0" max="255" value="255">
-      <label for="Red">Red</label>
-    </div>
-    <div>
-      <input type="range" id="Green" name="Green" min="0" max="255" value="255">
-      <label for="Green">Green</label>
-    </div>
-    <div>
-      <input type="range" id="Blue" name="Blue" min="0" max="255" value="255">
-      <label for="Blue">Blue</label>
-    </div>
-    <div class="field">
-      <button class="buttonBasic" id="play">Play</button>
-      <button class="buttonBasic" id="stop">Stop</button>
+    <div class="controls-container">
+      <div class="control-group">
+        <h3>File</h3>
+        <p class="description">視覚化する音声ファイルを選択します。</p>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+      <div class="control-group">
+        <h3>Bar Settings</h3>
+        <p class="description">音声波形バーの見た目を調整します。</p>
+        <div>
+          <label for="thickness">Bar thickness</label>
+          <input type="range" id="thickness" name="thickness" min="0.1" max="10" value="3" step="0.1">
+        </div>
+        <div>
+          <label for="gain">Gain</label>
+          <input type="range" id="gain" name="gain" min="0.1" max="5" value="1.5" step="0.1">
+        </div>
+      </div>
+      <div class="control-group">
+          <div class="control-group-header">
+            <h3>Rhythmic Scaling</h3>
+            <label class="switch">
+              <input type="checkbox" id="move" name="move">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p class="description">音量に合わせて波形が動的に変化する効果を調整します。</p>
+          <div>
+            <label for="moveGain">Gain</label>
+            <input type="range" id="moveGain" name="moveGain" min="0.1" max="5" value="1" step="0.1">
+          </div>
+          <div>
+            <label for="moveThreshold">Inertia</label>
+            <input type="range" id="moveThreshold" name="moveThreshold" min="1" max="100" value="10" step="1">
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-group-header">
+            <h3>Bass Reduction</h3>
+            <label class="switch">
+              <input type="checkbox" id="bassReduction" name="bassReduction">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p class="description">低音域の強調を抑え、よりクリアな視覚化を実現します。</p>
+        </div>
+        <div class="control-group">
+          <h3>Bar Color</h3>
+          <p class="description">音声波形バーの色を調整します。</p>
+          <div>
+            <label for="Red">Red</label>
+            <input type="range" id="Red" name="Red" min="0" max="255" value="255">
+          </div>
+          <div>
+            <label for="Green">Green</label>
+            <input type="range" id="Green" name="Green" min="0" max="255" value="255">
+          </div>
+          <div>
+            <label for="Blue">Blue</label>
+            <input type="range" id="Blue" name="Blue" min="0" max="255" value="255">
+          </div>
+        </div>
+        <div class="control-group">
+          <h3>Spectrum Shape</h3>
+          <p class="description">音声波形の表示形式を選択します。</p>
+          <select id="spectrumShape" name="spectrumShape">
+            <option value="normal" selected>Normal</option>
+            <option value="circle">Circle</option>
+            <option value="symmetry">Symmetry</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <h3>Spectrum Position</h3>
+          <p class="description">音声波形全体の表示位置を調整します。</p>
+          <div>
+            <label for="xOffset">X Offset</label>
+            <input type="range" id="xOffset" name="xOffset" min="-500" max="500" value="0" step="1">
+          </div>
+          <div>
+            <label for="yOffset">Y Offset</label>
+            <input type="range" id="yOffset" name="yOffset" min="-300" max="300" value="0" step="1">
+          </div>
+        </div>
+        <div class="control-group">
+          <h3>Spectrum Scale</h3>
+          <p class="description">音声波形全体の大きさを調整します。</p>
+          <div>
+            <label for="scale">Scale</label>
+            <input type="range" id="scale" name="scale" min="0.1" max="2.5" value="1" step="0.1">
+          </div>
+        </div>
+        <div class="control-group">
+          <h3>Background Image</h3>
+          <p class="description">キャンバスの背景画像を設定します。</p>
+          <input type="file" id="bgImageInput" accept="image/*">
+        </div>
+      </div>
+      <div class="control-group">
+        <h3>Controls</h3>
+        <p class="description">音楽の再生と停止を操作します。</p>
+        <div class="field">
+          <button class="buttonBasic" id="play">Play</button>
+          <button class="buttonBasic" id="stop">Stop</button>
+        </div>
+      </div>
     </div>
     <canvas id="Canvas" width="1280" height="720"></canvas>
     <div id="playBarContainer">
@@ -78,11 +132,11 @@
     <br/>
     <br/>
     <div class="center">
-      <p>© 2024 1A291109A6</p>
+      <p>© 2025 1A291109A6</p>
       <p>Contact:<a href="mailto:youheguchi918@gmail.com">youheguchi918@gmail.com</a></p>
       <p><a href="https://github.com/1A291109A6/WebAudioSpectrum" target="_blank" rel="noopener noreferrer">GitHub</a></p>
     </div>
-    <audio controls id="audioPlayer"></audio>
+    <audio controls id="audioPlayer" style="display: none;"></audio>
     <script src="js/main.js"></script>
   </body>
-</html>
+</html> 
