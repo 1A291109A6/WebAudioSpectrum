@@ -361,6 +361,16 @@ function drawSpctrum(data) {
         keepValue += spectrum[i];
       }
       moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
+    } else {
+      for (let i = 0; i < dataSize / 2; i++) {
+        const angle = (i / (dataSize / 2)) * 2 * Math.PI;
+        const x1 = centerX + radius * Math.cos(angle);
+        const y1 = centerY + radius * Math.sin(angle);
+        const x2 = centerX + (radius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.cos(angle);
+        const y2 = centerY + (radius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.sin(angle);
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+      }
     }
   } else if (shape === 'symmetry') {
     if (move) {
