@@ -30,6 +30,94 @@ audioPlayer.style.display = 'none';
 const playButton = document.getElementById('play');
 const stopButton = document.getElementById('stop');
 
+// Default settings
+const defaultSettings = {
+  thickness: 3,
+  gain: 1.5,
+  move: false,
+  moveGain: 1,
+  moveThreshold: 10,
+  bassReduction: false,
+  barColor: '#FFFFFF',
+  spectrumShape: 'normal',
+  xOffset: 0,
+  yOffset: 0,
+  scale: 1,
+};
+
+// Get references to control elements
+const thicknessControl = document.getElementById("thickness");
+const gainControl = document.getElementById("gain");
+const moveControl = document.getElementById("move");
+const moveGainControl = document.getElementById("moveGain");
+const moveThresholdControl = document.getElementById("moveThreshold");
+const bassReductionControl = document.getElementById("bassReduction");
+const barColorControl = document.getElementById("barColor");
+const spectrumShapeControl = document.getElementById("spectrumShape");
+const xOffsetControl = document.getElementById("xOffset");
+const yOffsetControl = document.getElementById("yOffset");
+const scaleControl = document.getElementById("scale");
+const resetSettingsButton = document.getElementById("resetSettings");
+
+let move = false;
+let moveValue = 0;
+let bassReductionArray = Array(dataSize / 2).fill(1);
+
+function applyBassReduction(enabled) {
+  if (enabled) {
+    for(let i = 0; i < dataSize / 2; i++) {
+      bassReductionArray[i] = 0.75 * i / dataSize + 0.625;
+    }
+  } else {
+    for(let i = 0; i < dataSize / 2; i++) {
+      bassReductionArray[i] = 1;
+    }
+  }
+}
+
+function saveSettings() {
+  const settings = {
+    thickness: thicknessControl.value,
+    gain: gainControl.value,
+    move: moveControl.checked,
+    moveGain: moveGainControl.value,
+    moveThreshold: moveThresholdControl.value,
+    bassReduction: bassReductionControl.checked,
+    barColor: barColorControl.value,
+    spectrumShape: spectrumShapeControl.value,
+    xOffset: xOffsetControl.value,
+    yOffset: yOffsetControl.value,
+    scale: scaleControl.value,
+  };
+  localStorage.setItem('webAudioSpectrumSettings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+  const savedSettings = JSON.parse(localStorage.getItem('webAudioSpectrumSettings'));
+  const settingsToApply = savedSettings || defaultSettings;
+
+  thicknessControl.value = settingsToApply.thickness;
+  gainControl.value = settingsToApply.gain;
+  moveControl.checked = settingsToApply.move;
+  moveGainControl.value = settingsToApply.moveGain;
+  moveThresholdControl.value = settingsToApply.moveThreshold;
+  bassReductionControl.checked = settingsToApply.bassReduction;
+  barColorControl.value = settingsToApply.barColor;
+  spectrumShapeControl.value = settingsToApply.spectrumShape;
+  xOffsetControl.value = settingsToApply.xOffset;
+  yOffsetControl.value = settingsToApply.yOffset;
+  scaleControl.value = settingsToApply.scale;
+
+  move = moveControl.checked;
+  applyBassReduction(bassReductionControl.checked);
+  drawSpctrum(); // Update visualization with loaded settings
+}
+
+function resetSettingsToDefault() {
+  localStorage.removeItem('webAudioSpectrumSettings'); // Clear saved settings
+  loadSettings(); // Load default settings
+}
+
 function updateButtonStates() {
   const isFileLoaded = waveData && waveData.length > 0;
   const isPlaying = !audioPlayer.paused;
@@ -231,12 +319,12 @@ function drawSpctrum(data) {
 
   context.save(); // 現在のキャンバスの状態を保存
 
-  const currentScale = parseFloat(scale.value);
-  const currentXOffset = parseFloat(xOffset.value);
-  const currentYOffset = parseFloat(yOffset.value);
+  const currentScale = parseFloat(scaleControl.value);
+  const currentXOffset = parseFloat(xOffsetControl.value);
+  const currentYOffset = parseFloat(yOffsetControl.value);
 
   let baseCenterX, baseCenterY;
-  const shape = spectrumShape.value;
+  const shape = spectrumShapeControl.value;
 
   if (shape === 'circle') {
     baseCenterX = canvas.width / 2;
@@ -252,8 +340,8 @@ function drawSpctrum(data) {
   context.translate(-(baseCenterX + currentXOffset), -(baseCenterY + currentYOffset));
 
   context.beginPath();
-  context.strokeStyle = `rgb(${R.value},${G.value},${B.value})`;
-  context.lineWidth = thickness.value * sizeRatio / currentScale; // スケールに合わせて線の太さも調整
+  context.strokeStyle = barColorControl.value;
+  context.lineWidth = thicknessControl.value * sizeRatio / currentScale; // スケールに合わせて線の太さも調整
 
   if (shape === 'circle') {
     const centerX = canvas.width / 2;
@@ -266,23 +354,13 @@ function drawSpctrum(data) {
         const scaledRadius = radius * (1 + moveValue);
         const x1 = centerX + scaledRadius * Math.cos(angle);
         const y1 = centerY + scaledRadius * Math.sin(angle);
-        const x2 = centerX + (scaledRadius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.cos(angle);
-        const y2 = centerY + (scaledRadius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.sin(angle);
+        let x2 = centerX + (scaledRadius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.cos(angle);
+        let y2 = centerY + (scaledRadius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.sin(angle);
         context.moveTo(x1, y1);
         context.lineTo(x2, y2);
         keepValue += spectrum[i];
       }
-      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
-    } else {
-      for (let i = 0; i < dataSize / 2; i++) {
-        const angle = (i / (dataSize / 2)) * 2 * Math.PI;
-        const x1 = centerX + radius * Math.cos(angle);
-        const y1 = centerY + radius * Math.sin(angle);
-        const x2 = centerX + (radius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.cos(angle);
-        const y2 = centerY + (radius + spectrum[i] * gain.value * bassReduction[i] * sizeRatio) * Math.sin(angle);
-        context.moveTo(x1, y1);
-        context.lineTo(x2, y2);
-      }
+      moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
     }
   } else if (shape === 'symmetry') {
     if (move) {
@@ -290,19 +368,19 @@ function drawSpctrum(data) {
       for (let i = 0; i < dataSize / 2; i++) {
         const x = canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue);
         const y = canvas.height * 2 / 3;
-        const height = (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio;
+        const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
         context.moveTo(x, y);
         context.lineTo(x, y - height);
         context.moveTo(x, y);
         context.lineTo(x, y + height);
         keepValue += spectrum[i];
       }
-      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
+      moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
     } else {
       for (let i = 0; i < dataSize / 2; i++) {
         const x = canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3);
         const y = canvas.height * 2 / 3;
-        const height = (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio;
+        const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
         context.moveTo(x, y);
         context.lineTo(x, y - height);
         context.moveTo(x, y);
@@ -314,14 +392,14 @@ function drawSpctrum(data) {
       let keepValue = 0;
       for (let i = 0; i < dataSize / 2; i++) {
         context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
-        context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
+        context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio);
         keepValue += spectrum[i];
       }
-      moveValue = (1 - 1 / (moveThreshold.value)) * moveValue + (1 - (1 - 1 / (moveThreshold.value))) * keepValue * moveGain.value * 1e-4;
+      moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
     } else {
       for (let i = 0; i < dataSize / 2; i++) {
         context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-        context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gain.value * bassReduction[i]) * sizeRatio);
+        context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio);
       }
     }
   }
@@ -392,44 +470,24 @@ function stopAnimation() {
   animationRunning = false;
 }
 
-var thickness = document.getElementById("thickness");
-var gain = document.getElementById("gain");
-var R = document.getElementById("Red");
-var G = document.getElementById("Green");
-var B = document.getElementById("Blue");
-var spectrumShape = document.getElementById("spectrumShape");
-var xOffset = document.getElementById("xOffset");
-var yOffset = document.getElementById("yOffset");
-var scale = document.getElementById("scale");
-var moveGain = document.getElementById("moveGain");
-var moveThreshold = document.getElementById("moveThreshold");
-var move = false;
-var moveValue = 0;
-var bassReduction = Array(dataSize / 2).fill(1);
-
-document.getElementById("move").addEventListener('change', function() {
-  move = this.checked;
-});
-
-document.getElementById("bassReduction").addEventListener('change', function() {
-  if (this.checked) {
-    for(let i = 0; i < dataSize / 2; i++) {
-      bassReduction[i] = 0.75 * i / dataSize + 0.625;
-    }
-  } else {
-    for(let i = 0; i < dataSize / 2; i++) {
-      bassReduction[i] = 1;
-    }
-  }
-});
-
-document.getElementById("spectrumShape").addEventListener('change', function() {
-  drawSpctrum();
-});
-
 document.addEventListener('DOMContentLoaded', (event) => {
   init();
+  loadSettings(); // Load settings on page load
   updateButtonStates();
+
+  // Event listeners for saving settings
+  thicknessControl.addEventListener('input', saveSettings);
+  gainControl.addEventListener('input', saveSettings);
+  moveControl.addEventListener('change', () => { move = moveControl.checked; saveSettings(); });
+  moveGainControl.addEventListener('input', saveSettings);
+  moveThresholdControl.addEventListener('input', saveSettings);
+  bassReductionControl.addEventListener('change', () => { applyBassReduction(bassReductionControl.checked); saveSettings(); });
+  barColorControl.addEventListener('input', saveSettings);
+  spectrumShapeControl.addEventListener('change', () => { drawSpctrum(); saveSettings(); });
+  xOffsetControl.addEventListener('input', saveSettings);
+  yOffsetControl.addEventListener('input', saveSettings);
+  scaleControl.addEventListener('input', saveSettings);
+  resetSettingsButton.addEventListener('click', resetSettingsToDefault);
 
   const bgImageInput = document.getElementById('bgImageInput');
   bgImageInput.addEventListener('change', (e) => {
