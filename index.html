@@ -19,6 +19,14 @@
   </head>
   <body>
     <h1>Web Audio Spectrum</h1>
+    <nav>
+        <ul>
+            <li><a href="index.html">トップ</a></li>
+            <li><a href="privacy.html">プライバシーポリシー</a></li>
+            <li><a href="terms.html">利用規約</a></li>
+            <li><a href="contact.html">お問い合わせ</a></li>
+        </ul>
+    </nav>
     <div class="controls-container">
       <div class="control-group">
         <h3>File</h3>
@@ -69,16 +77,8 @@
           <h3>Bar Color</h3>
           <p class="description">音声波形バーの色を調整します。</p>
           <div>
-            <label for="Red">Red</label>
-            <input type="range" id="Red" name="Red" min="0" max="255" value="255">
-          </div>
-          <div>
-            <label for="Green">Green</label>
-            <input type="range" id="Green" name="Green" min="0" max="255" value="255">
-          </div>
-          <div>
-            <label for="Blue">Blue</label>
-            <input type="range" id="Blue" name="Blue" min="0" max="255" value="255">
+            <label for="barColor">Color</label>
+            <input type="color" id="barColor" name="barColor" value="#FFFFFF">
           </div>
         </div>
         <div class="control-group">
@@ -124,6 +124,13 @@
           <button class="buttonBasic" id="stop">Stop</button>
         </div>
       </div>
+      <div class="control-group">
+        <h3>Settings Management</h3>
+        <p class="description">設定をデフォルトに戻します。</p>
+        <div class="field">
+          <button class="buttonBasic" id="resetSettings">Reset to Default</button>
+        </div>
+      </div>
     </div>
     <canvas id="Canvas" width="1280" height="720"></canvas>
     <div id="playBarContainer">
@@ -132,11 +139,11 @@
     <br/>
     <br/>
     <div class="center">
-      <p>© 2025 1A291109A6</p>
-      <p>Contact:<a href="mailto:youheguchi918@gmail.com">youheguchi918@gmail.com</a></p>
+      <p>&copy; 2025 WebAudioSpectrum</p>
+      <p><a href="terms.html">利用規約</a> | <a href="privacy.html">プライバシーポリシー</a> | <a href="contact.html">お問い合わせ</a></p>
       <p><a href="https://github.com/1A291109A6/WebAudioSpectrum" target="_blank" rel="noopener noreferrer">GitHub</a></p>
     </div>
     <audio controls id="audioPlayer" style="display: none;"></audio>
     <script src="js/main.js"></script>
   </body>
-</html> 
+</html>
