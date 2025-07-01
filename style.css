@@ -109,7 +109,7 @@ input[type="range"]::-moz-range-thumb {
   font-family: sans-serif;
   font-size: 16px;
   color: #fff;
-  background-color: #4a7aa2;
+  background-color: #df4b4b;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -117,7 +117,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .buttonBasic:hover {
-  background-color: #2f4980;
+  background-color: #7b2c2c;
 }
 
 .buttonBasic:disabled {
