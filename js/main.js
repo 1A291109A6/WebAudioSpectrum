@@ -149,7 +149,7 @@ function init() {
         updateButtonStates();
 
         const loadingBar = document.createElement('div');
-        loadingBar.textContent = 'Music loaded!!';
+        loadingBar.textContent = '音声ファイルを読み込みました';
         loadingBar.style.width = '90%';
         loadingBar.style.height = '50px';
         loadingBar.style.backgroundColor = '#229922';
@@ -335,27 +335,31 @@ function drawSpctrum(data) {
   }
 
   // 描画の中心を移動し、スケールを適用
-  context.translate(baseCenterX + currentXOffset, baseCenterY + currentYOffset);
+  // 1. 描画の中心に原点を移動（オフセットも適用）
+  context.translate(baseCenterX + currentXOffset, baseCenterY - currentYOffset);
+  // 2. 拡大・縮小
   context.scale(currentScale, currentScale);
-  context.translate(-(baseCenterX + currentXOffset), -(baseCenterY + currentYOffset));
 
   context.beginPath();
   context.strokeStyle = barColorControl.value;
   context.lineWidth = thicknessControl.value * sizeRatio / currentScale; // スケールに合わせて線の太さも調整
 
   if (shape === 'circle') {
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
     const radius = Math.min(canvas.width, canvas.height) / 4;
+
     if (move) {
       let keepValue = 0;
       for (let i = 0; i < dataSize / 2; i++) {
         const angle = (i / (dataSize / 2)) * 2 * Math.PI;
+        const barHeight = spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio;
         const scaledRadius = radius * (1 + moveValue);
-        const x1 = centerX + scaledRadius * Math.cos(angle);
-        const y1 = centerY + scaledRadius * Math.sin(angle);
-        let x2 = centerX + (scaledRadius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.cos(angle);
-        let y2 = centerY + (scaledRadius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.sin(angle);
+
+        // 基準点(0,0)からの相対座標で計算
+        const x1 = scaledRadius * Math.cos(angle);
+        const y1 = scaledRadius * Math.sin(angle);
+        const x2 = (1 + scaledRadius + barHeight) * Math.cos(angle);
+        const y2 = (1 + scaledRadius + barHeight) * Math.sin(angle);
+
         context.moveTo(x1, y1);
         context.lineTo(x2, y2);
         keepValue += spectrum[i];
@@ -364,21 +368,28 @@ function drawSpctrum(data) {
     } else {
       for (let i = 0; i < dataSize / 2; i++) {
         const angle = (i / (dataSize / 2)) * 2 * Math.PI;
-        const x1 = centerX + radius * Math.cos(angle);
-        const y1 = centerY + radius * Math.sin(angle);
-        const x2 = centerX + (radius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.cos(angle);
-        const y2 = centerY + (radius + spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio) * Math.sin(angle);
+        const barHeight = spectrum[i] * gainControl.value * bassReductionArray[i] * sizeRatio;
+
+        // 基準点(0,0)からの相対座標で計算
+        const x1 = radius * Math.cos(angle);
+        const y1 = radius * Math.sin(angle);
+        const x2 = (radius + barHeight) * Math.cos(angle);
+        const y2 = (radius + barHeight) * Math.sin(angle);
+        
         context.moveTo(x1, y1);
         context.lineTo(x2, y2);
       }
-    }
+  }
   } else if (shape === 'symmetry') {
     if (move) {
       let keepValue = 0;
       for (let i = 0; i < dataSize / 2; i++) {
-        const x = canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue);
-        const y = canvas.height * 2 / 3;
+        // x座標の計算から `canvas.width / 2` を削除
+        const x = (-canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue);
+        // y座標の基準点を 0 に変更
+        const y = 0;
         const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
+        
         context.moveTo(x, y);
         context.lineTo(x, y - height);
         context.moveTo(x, y);
@@ -388,9 +399,12 @@ function drawSpctrum(data) {
       moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
     } else {
       for (let i = 0; i < dataSize / 2; i++) {
-        const x = canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3);
-        const y = canvas.height * 2 / 3;
+        // x座標の計算から `canvas.width / 2` を削除
+        const x = -canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3);
+        // y座標の基準点を 0 に変更
+        const y = 0;
         const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
+
         context.moveTo(x, y);
         context.lineTo(x, y - height);
         context.moveTo(x, y);
@@ -401,15 +415,23 @@ function drawSpctrum(data) {
     if (move) {
       let keepValue = 0;
       for (let i = 0; i < dataSize / 2; i++) {
-        context.moveTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3);
-        context.lineTo(canvas.width / 2 + (- canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue), canvas.height * 2 / 3 - (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio);
+        const x = (-canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3)) * (1 + moveValue);
+        const y = 0;
+        const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
+
+        context.moveTo(x, y);
+        context.lineTo(x, y - height);
         keepValue += spectrum[i];
       }
       moveValue = (1 - 1 / (moveThresholdControl.value)) * moveValue + (1 - (1 - 1 / (moveThresholdControl.value))) * keepValue * moveGainControl.value * 1e-4;
     } else {
       for (let i = 0; i < dataSize / 2; i++) {
-        context.moveTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3);
-        context.lineTo(canvas.width / 2 - canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3), canvas.height * 2 / 3 - (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio);
+        const x = -canvas.width / 3 + (i / (dataSize / 2 - 1)) * canvas.width * (2 / 3);
+        const y = 0;
+        const height = (1 + spectrum[i] * gainControl.value * bassReductionArray[i]) * sizeRatio;
+
+        context.moveTo(x, y);
+        context.lineTo(x, y - height);
       }
     }
   }
@@ -516,18 +538,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   });
 
-  playButton.addEventListener('click', () => {
-      // FFT関連の配列をすべてリセットする
-      reverseBitArray = [];
-      wiRList = [];
-      wiIList = [];
-      wkRList = [];
-      wkIList = [];
-
-      // その後で再生成する
-      getReverseBitArray();
-      makeWList();
-  
+  playButton.addEventListener('click', () => {  
       audioPlayer.play();
       startAnimation();
       moveValue = 0;
